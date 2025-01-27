@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Router } from "express";
 const dotenv = require("dotenv");
 
 // configures dotenv to work in your application
@@ -7,9 +7,9 @@ const app = express();
 
 const PORT = process.env.PORT;
 
-app.get("/", (request:Request, response:Response) => { 
-  response.status(200).send("Hello World");
-}); 
+const ingredientRoute:Router = require("./routes/ingredient")
+
+app.use("/ingredient", ingredientRoute)
 
 app.listen(PORT, () => { 
   console.log("Server running at PORT: ", PORT); 
