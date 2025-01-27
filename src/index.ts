@@ -1,5 +1,6 @@
 import express, { Router } from "express";
 const dotenv = require("dotenv");
+const bodyParser = require('body-parser');
 
 // configures dotenv to work in your application
 dotenv.config();
@@ -7,8 +8,12 @@ const app = express();
 
 const PORT = process.env.PORT;
 
+// Import routes
 const ingredientRoute:Router = require("./routes/ingredient")
 
+app.use(bodyParser.json());
+
+// Use routes
 app.use("/ingredient", ingredientRoute)
 
 app.listen(PORT, () => { 

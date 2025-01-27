@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Ingredient {
-  id                 Int                  @id
+  id                 Int                  @id @default(autoincrement())
   name               String
   picture            String[]
   IngredientQuantity IngredientQuantity[]
