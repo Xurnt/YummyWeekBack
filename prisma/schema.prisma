@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Ingredient {
+  id                 Int                  @id
+  name               String
+  picture            String[]
+  IngredientQuantity IngredientQuantity[]
+}
+
+model IngredientQuantity {
+  id           Int        @id(map: "Quantity_pkey")
+  ingredientId Int
+  unitId       Int
+  value        Float      @db.Real
+  recipeId     Int
+  Ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Unit         Unit       @relation(fields: [unitId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Recipe {
+  id                 Int                  @id(map: "Recipee_pkey")
+  mealNumber         Int
+  picture            String?
+  IngredientQuantity IngredientQuantity[]
+  Step               Step[]
+}
+
+model Step {
+  id          Int    @id(map: "RecipeStep_pkey")
+  ndex        Int    @map("îndex")
+  description String
+  recipeId    Int
+  Recipe      Recipe @relation(fields: [recipeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Unit {
+  id                 Int                  @id
+  name               String
+  IngredientQuantity IngredientQuantity[]
+}
