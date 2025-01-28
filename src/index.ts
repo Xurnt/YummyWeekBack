@@ -1,4 +1,5 @@
 import express, { Router } from "express";
+import errorHandler from "./middleware/errorHandler";
 const dotenv = require("dotenv");
 const bodyParser = require('body-parser');
 
@@ -22,3 +23,5 @@ app.listen(PORT, () => {
   // gracefully handle error
   throw new Error(error.message);
 })
+
+app.use(errorHandler)
