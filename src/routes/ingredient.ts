@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express"
+import { Router, Request, Response, NextFunction } from "express"
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
@@ -9,15 +9,34 @@ router.get("/", (request:Request, response:Response) => {
     response.send({ data: "get all ingredients"})
 })
 
-router.post("/", async(request:Request, response:Response) => {
-    const name:string = request.body.name
-    console.log(request.body)
-    const result = await prisma.ingredient.create({
-        data: {
-            name
+router.post("/", async(request:Request, response:Response, next: NextFunction) => {
+    try {
+        if (!("name" in request.body)){
+            response.status(400)
+            throw new Error('Request body must contain a name parameter')
         }
-    })
-    response.json(result)
+        if (typeof request.body.name != "string"){
+            response.status(400)
+            throw new Error('Name parameter in body must be a string')
+        }
+        const name:string = request.body.name
+        if (name == ""){
+            response.status(400)
+            throw new Error('Name parameter in body must not be empty')
+        }
+        const result = await prisma.ingredient.create({
+            data: {
+                name
+            }
+        })
+        response.json({
+            message: "Ingredient created successfully!",
+            ingredientId: result.id
+        })
+    } catch (error) {
+        next(error)
+    }
+
 })
 
 router.get("/:ingredientId", async(request:Request, response:Response) => {
