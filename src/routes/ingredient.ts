@@ -1,10 +1,26 @@
 import { Router, Request, Response, NextFunction } from "express"
-import { PrismaClient } from '@prisma/client'
+import { Ingredient, PrismaClient } from '@prisma/client'
 import { isInteger } from "../utils"
 
 const prisma = new PrismaClient()
 const express = require("express")
 const router:Router = express.Router()
+
+
+function parseIngredientId(ingredientId:string, response:Response) : number {
+    if (!isInteger(ingredientId)){
+        response.status(400)
+        throw new Error('ingredientId parameter in query must be a number')
+    }
+    return parseInt(ingredientId)
+}
+
+function handleDatabaseQueryError(databaseResult:Ingredient|null ,message:string, response:Response): void{
+    if (databaseResult == null) {
+        response.status(500)
+        throw new Error(message)
+    }
+}
 
 // GET ALL INGREDIENTS
 
@@ -48,18 +64,11 @@ router.post("/", async(request:Request, response:Response, next: NextFunction) =
 
 router.get("/:ingredientId", async(request:Request, response:Response, next: NextFunction) => {
     try {
-        if (!isInteger(request.params.ingredientId)){
-            response.status(400)
-            throw new Error('ingredientId parameter in query must be a number')
-        }
-        const ingredientId:number = parseInt(request.params.ingredientId)
+        const ingredientId:number = parseIngredientId(request.params.ingredientId, response)
         const ingredient = await prisma.ingredient.findUnique({
             where: {id: ingredientId }
         })
-        if (ingredient == null) {
-            response.status(500)
-            throw new Error('Ingredient with id ' + request.params.ingredientId + ' not found')
-        }
+        handleDatabaseQueryError(ingredient, 'Ingredient with id ' + request.params.ingredientId + ' not found', response)
         response.json({
             message: "Ingredient retrieved successfully!",
             ingredient: ingredient
@@ -77,8 +86,21 @@ router.put("/:ingredientId", (request:Request, response:Response) => {
 
 // DELETE INGREDIENT
 
-router.delete("/:ingredientId", (request:Request, response:Response) => {
-    response.send({ data: "delete ingredient with id " + request.params.ingredientId})
+router.delete("/:ingredientId", async(request:Request, response:Response, next: NextFunction) => {
+    try {
+        const ingredientId:number = parseIngredientId(request.params.ingredientId, response)
+        const deletedIngredient = await prisma.ingredient.delete({
+            where: {
+              id: ingredientId,
+            },
+        })
+        handleDatabaseQueryError(deletedIngredient, 'Ingredient with id ' + request.params.ingredientId + ' not found', response)
+        response.json({
+            message: "Ingredient deleted successfully!",
+        })
+    } catch (error) {
+        next(error)
+    }
 })
 
 
