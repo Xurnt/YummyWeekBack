@@ -15,7 +15,7 @@ function parseIngredientId(ingredientId:string, response:Response) : number {
     return parseInt(ingredientId)
 }
 
-function handleDatabaseQueryError(databaseResult:Ingredient|null ,message:string, response:Response): void{
+function handleDatabaseQueryError(databaseResult:Ingredient|Ingredient[]|null ,message:string, response:Response): void{
     if (databaseResult == null) {
         response.status(500)
         throw new Error(message)
@@ -24,8 +24,17 @@ function handleDatabaseQueryError(databaseResult:Ingredient|null ,message:string
 
 // GET ALL INGREDIENTS
 
-router.get("/", (request:Request, response:Response) => {
-    response.send({ data: "get all ingredients"})
+router.get("/", async(request:Request, response:Response, next: NextFunction) => {
+    try {
+        const ingredients = await prisma.ingredient.findMany()
+        handleDatabaseQueryError(ingredients, 'Error while retrieing ingredients', response)
+        response.json({
+            message: "Ingredients retrieved successfully!",
+            ingredients: ingredients
+        })
+    } catch(error){
+        next(error)
+    }
 })
 
 
