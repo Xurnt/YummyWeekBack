@@ -22,6 +22,29 @@ function handleDatabaseQueryError(databaseResult:Ingredient|Ingredient[]|null ,m
     }
 }
 
+function handleBodyParameterAbsent(parameterName:string,request:Request, response:Response): void{
+    if (!(parameterName in request.body)){
+        response.status(400)
+        throw new Error('Request body must contain a ' + parameterName + ' parameter')
+    }
+}
+
+function handleBodyParameterTypeIncorrect(parameter:string, expectedType:string, parameterName:string, response:Response): void{
+    if (typeof parameter != expectedType){
+        response.status(400)
+        throw new Error(parameterName + ' parameter in body must be a ' + expectedType)
+    }
+}
+
+function handleBodyParameterStringEmpty(parameter:string, parameterName:string, response:Response): void{
+    if (parameter == ""){
+        response.status(400)
+        throw new Error(parameterName + ' parameter in body must not be empty')
+    }
+}
+
+
+
 // GET ALL INGREDIENTS
 
 router.get("/", async(request:Request, response:Response, next: NextFunction) => {
@@ -42,19 +65,10 @@ router.get("/", async(request:Request, response:Response, next: NextFunction) =>
 
 router.post("/", async(request:Request, response:Response, next: NextFunction) => {
     try {
-        if (!("name" in request.body)){
-            response.status(400)
-            throw new Error('Request body must contain a name parameter')
-        }
-        if (typeof request.body.name != "string"){
-            response.status(400)
-            throw new Error('Name parameter in body must be a string')
-        }
+        handleBodyParameterAbsent("name", request, response)
+        handleBodyParameterTypeIncorrect(request.body.name, "string", "Name", response)
         const name:string = request.body.name
-        if (name == ""){
-            response.status(400)
-            throw new Error('Name parameter in body must not be empty')
-        }
+        handleBodyParameterStringEmpty(name, "Name", response)
         const result = await prisma.ingredient.create({
             data: {
                 name
@@ -89,8 +103,28 @@ router.get("/:ingredientId", async(request:Request, response:Response, next: Nex
 
 // UPDATE INGREDIENT
 
-router.put("/:ingredientId", (request:Request, response:Response) => {
-    response.send({ data: "update ingredient with id " + request.params.ingredientId })
+router.put("/:ingredientId", async(request:Request, response:Response, next:NextFunction) => {
+    try {
+        const ingredientId:number = parseIngredientId(request.params.ingredientId, response)
+        handleBodyParameterAbsent("name", request, response)
+        handleBodyParameterTypeIncorrect(request.body.name, "string", "Name", response)
+        const name:string = request.body.name
+        handleBodyParameterStringEmpty(name, "Name", response)
+        const updatedIngredient = await prisma.ingredient.update({
+            where: {
+              id: ingredientId,
+            },
+            data: {
+                name
+            }
+        })
+        handleDatabaseQueryError(updatedIngredient, 'Ingredient with id ' + request.params.ingredientId + ' not found', response)
+        response.json({
+            message: "Ingredient updated successfully!",
+        })
+    } catch (error) {
+        next(error)
+    }
 })
 
 // DELETE INGREDIENT
