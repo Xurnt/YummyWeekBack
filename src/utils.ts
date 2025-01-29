@@ -10,3 +10,7 @@ export function getErrorMessage(error: unknown): string {
     }
     return "An error occured";
 }
+
+export function isInteger(value:string): boolean {
+    return /^\d+$/.test(value);
+}
