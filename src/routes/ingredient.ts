@@ -1,11 +1,13 @@
 import { Router, Request, Response, NextFunction } from "express"
 import { Ingredient, PrismaClient } from '@prisma/client'
 import { isInteger } from "../utils"
+import { BodyParameter, BodyParameterType, validateBodyParams } from "../queryTools"
 
 const prisma = new PrismaClient()
 const express = require("express")
 const router:Router = express.Router()
 
+const bodyParams:BodyParameter[] = [{name:"name", mandatory:true, type: BodyParameterType.string}]
 
 function parseIngredientId(ingredientId:string, response:Response) : number {
     if (!isInteger(ingredientId)){
@@ -21,28 +23,6 @@ function handleDatabaseQueryError(databaseResult:Ingredient|Ingredient[]|null ,m
         throw new Error(message)
     }
 }
-
-function handleBodyParameterAbsent(parameterName:string,request:Request, response:Response): void{
-    if (!(parameterName in request.body)){
-        response.status(400)
-        throw new Error('Request body must contain a ' + parameterName + ' parameter')
-    }
-}
-
-function handleBodyParameterTypeIncorrect(parameter:string, expectedType:string, parameterName:string, response:Response): void{
-    if (typeof parameter != expectedType){
-        response.status(400)
-        throw new Error(parameterName + ' parameter in body must be a ' + expectedType)
-    }
-}
-
-function handleBodyParameterStringEmpty(parameter:string, parameterName:string, response:Response): void{
-    if (parameter == ""){
-        response.status(400)
-        throw new Error(parameterName + ' parameter in body must not be empty')
-    }
-}
-
 
 
 // GET ALL INGREDIENTS
@@ -65,10 +45,8 @@ router.get("/", async(request:Request, response:Response, next: NextFunction) =>
 
 router.post("/", async(request:Request, response:Response, next: NextFunction) => {
     try {
-        handleBodyParameterAbsent("name", request, response)
-        handleBodyParameterTypeIncorrect(request.body.name, "string", "Name", response)
+        validateBodyParams(request, response, bodyParams)
         const name:string = request.body.name
-        handleBodyParameterStringEmpty(name, "Name", response)
         const result = await prisma.ingredient.create({
             data: {
                 name
@@ -106,10 +84,8 @@ router.get("/:ingredientId", async(request:Request, response:Response, next: Nex
 router.put("/:ingredientId", async(request:Request, response:Response, next:NextFunction) => {
     try {
         const ingredientId:number = parseIngredientId(request.params.ingredientId, response)
-        handleBodyParameterAbsent("name", request, response)
-        handleBodyParameterTypeIncorrect(request.body.name, "string", "Name", response)
+        validateBodyParams(request, response, bodyParams)
         const name:string = request.body.name
-        handleBodyParameterStringEmpty(name, "Name", response)
         const updatedIngredient = await prisma.ingredient.update({
             where: {
               id: ingredientId,
@@ -145,6 +121,5 @@ router.delete("/:ingredientId", async(request:Request, response:Response, next: 
         next(error)
     }
 })
-
 
 module.exports = router
